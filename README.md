@@ -118,6 +118,48 @@ localhost:6443 {
 }
 ```
 
+Example: Redirect to custom pages based on the bouncer decision for blocking the request
+```
+localhost:5443 {
+  route {
+    crowdsec
+    appsec
+    
+    # Redirect to ban-specific page if blocked by Bouncer
+    @bouncer_ban expression {http.request.context.crowdsec.bouncer_decision} == "ban"
+    handle @bouncer_ban {
+      root /srv
+      rewrite * /banned.html
+      file_server
+      header Content-Type "text/html; charset=utf-8"
+      header Status 403
+    }
+      
+    # Redirect to capcha page if blocked by Bouncer (capcha is currently equivalent to ban see TODO)
+    @bouncer_capcha expression {http.request.context.crowdsec.bouncer_decision} == "capcha"
+    handle @bouncer_capcha {
+      root /srv
+      rewrite * /capcha.html
+      file_server
+      header Content-Type "text/html; charset=utf-8"
+      header Status 403
+    }
+
+    # Redirect to throttle page if too many requests detected by Bouncer
+    @bouncer_throttle expression {http.request.context.crowdsec.bouncer_decision} == "throttle"
+    handle @bouncer_throttle {
+      root /srv
+      rewrite * /throttle.html
+      file_server
+      header Content-Type "text/html; charset=utf-8"
+      header Status 429
+    }    
+    
+    respond "Allowed by Bouncer and AppSec!"
+  }
+}
+```
+
 Run the Caddy server
 
 ```bash

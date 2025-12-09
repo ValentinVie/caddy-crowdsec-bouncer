@@ -105,6 +105,9 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request, next caddyht
 		value := *decision.Value
 		duration := *decision.Duration
 
+		// Set the response type in Caddy's request context to distinguish CrowdSec responses from backend 403/429 responses
+		caddyhttp.SetVar(ctx, "crowdsec.bouncer_decision", typ)
+
 		return httputils.WriteResponse(w, h.logger, typ, value, duration, 0)
 	}
 
